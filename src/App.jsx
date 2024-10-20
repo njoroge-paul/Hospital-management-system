@@ -6,7 +6,7 @@ import PatientAuth from './components/PatientAuth'; // Import Patient Auth compo
 import DoctorAuth from './components/DoctorAuth'; // Import Doctor Auth component
 import AdminDashboard from './components/AdminDashboard';
 import DoctorDashboard from './components/DoctorDashboard';
-//import PatientDashboard from './components/PatientDashboard';
+import PatientDashboard from './components/PatientDashboard';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
 
@@ -22,7 +22,7 @@ function App() {
         <Route path="/doctor/auth" element={<DoctorAuth />} /> Route for Doctor Login
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/doctor" element={<DoctorDashboard />} />
-        {/* <Route path="/patient" element={<PatientDashboard />} /> */}
+        <Route path="/patient" element={<PatientDashboard />} />
       </Routes>
     </Router>
   );

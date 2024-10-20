@@ -1,219 +1,959 @@
 import React, { useState, useEffect } from "react";
-import { FaBars, FaCalendarAlt, FaFileMedical, FaMoneyBill, FaSun, FaMoon } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
+import { FaBars, FaCalendarAlt, FaUserInjured, FaUserEdit, FaMoneyBill } from "react-icons/fa";
+import { useNavigate } from "react-router-dom"; // Import useNavigate for routing
+import styled from 'styled-components';
 
-// Sample data for doctors and bills. This could come from an API in a real application.
-const sampleDoctors = [
-  { id: 1, name: "Dr. Smith", service: "Consultation" },
-  { id: 2, name: "Dr. Jones", service: "Check-up" },
-  { id: 3, name: "Dr. Brown", service: "Follow-Up" },
-  { id: 4, name: "Dr. White", service: "Consultation" },
-];
-
-// Sample data for bills
-const initialBills = [
-  { id: 1, date: "2024-10-01", amount: 150, status: "Pending" },
-  { id: 2, date: "2024-10-10", amount: 200, status: "Pending" },
-  { id: 3, date: "2024-10-15", amount: 75, status: "Paid" },
-];
-
-const PatientDashboard = () => {
-  const navigate = useNavigate(); // Initialize useNavigate
-  const [showSidebar, setShowSidebar] = useState(false);
-  const [selectedAction, setSelectedAction] = useState("");
-  const [selectedService, setSelectedService] = useState("");
-  const [availableDoctors, setAvailableDoctors] = useState([]);
-  const [bills, setBills] = useState(initialBills);
+const StyledForm = styled.form`
+  max-height: calc(100vh - 10rem);
+  overflow-y: auto;
+  padding-right: 0.8rem; /* Creates space for the scrollbar */
+  padding-bottom: 2rem;
+  margin-right: -0.4rem; /* Moves the scrollbar inward by 0.4rem */
   
-  // State for theme
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    // Check local storage for theme preference
-    return localStorage.getItem('theme') === 'dark';
-  });
+  /* Custom scrollbar styles */
+  &::-webkit-scrollbar {
+    width: 0.4rem;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: rgb(71, 85, 105);
+    border-radius: 0.4rem;
+  }
+  &::-webkit-scrollbar-track {
+    background-color: white;
+  }
+`;
+
+const ScrollableWrapper = styled.div`
+  position: relative;
+  padding: 0 2rem; /* Horizontal padding of 2rem */
+  margin-top: 2.5rem; /* Margin from the top */
+  overflow-y: scroll; /* Keeps the ability to scroll */
+  max-height: calc(100vh - 11rem); /* Maximum height adjustment */
+
+  &::-webkit-scrollbar {
+    width: 0; /* Hide the scrollbar */
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: transparent; /* Make the scrollbar thumb transparent */
+    border-radius: 0.4rem;
+  }
+
+  &::-webkit-scrollbar-track {
+    background-color: transparent; /* Make the scrollbar track transparent */
+  }
+`;
+
+const DoctorDashboard = () => {
+  /**
+   * Imports Section
+   */ 
+  const navigate = useNavigate(); // Initialize useNavigate
 
   useEffect(() => {
-    // Persist theme preference to local storage
-    localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
-  }, [isDarkMode]);
+    const user_role = localStorage.getItem('user_role');
 
-  const handleToggleTheme = () => {
-    setIsDarkMode(prevMode => !prevMode);
-  };
+    if (!user_role) {
+      alert("You are not Logged In")
+      navigate('/'); 
+      return
+    }
 
+    if (user_role != 2) {
+      alert("Unauthorized")
+      navigate('/');  
+      return
+    }
+  }, [navigate]);
+
+  /**
+   * Data Section
+   */ 
+  const [showSidebar, setShowSidebar] = useState(false);
+  const [selectedAction, setSelectedAction] = useState("viewMyPatients");
+  const [isDarkMode, setIsDarkMode] = useState(true); // State for dark mode
+  const [isUpdateAppointmentPromptOpen, setIsUpdateAppointmentPromptOpen] = useState(false);
+  const [appointmentToBeUpdated, setAppointmentToBeUpdated] = useState(null);
+  const [appointments, setAppointments] = useState([]);
+  const [patientGettingRecordAdded, setPatientGettingRecordAdded] = useState(null);
+  const [isAddRecordPromptOpen, setIsAddRecordPromptOpen] = useState(false);
+  const [patients, setPatients] = useState([])
+  const [recordToBeAdded, setRecordToBeAdded] = useState({
+    patient_id: null,
+    record: "Enter Record...",
+    subject: "Enter Subject..."
+  })
+
+  const doctor_id = localStorage.getItem('doctor_id')
+  /** 
+    *Methods Section 
+  **/
   const handleActionClick = (action) => {
     setSelectedAction(action);
     setShowSidebar(false); // Optionally hide the sidebar after selecting an action
-
-    // If the action is to view bills, fetch the bills
-    if (action === "viewBills") {
-      fetchBills();
-    }
-  };
-
-  const handleServiceChange = (service) => {
-    setSelectedService(service);
-    fetchAvailableDoctors(service);
-  };
-
-  const fetchAvailableDoctors = (service) => {
-    // Simulate fetching data from an API
-    const doctors = sampleDoctors.filter((doctor) => doctor.service === service);
-    setAvailableDoctors(doctors);
-  };
-
-  const fetchBills = () => {
-    // Simulate fetching bills from an API
-    setBills(initialBills);
-  };
-
-  const handlePayment = (billId) => {
-    // Simulate payment processing
-    setBills((prevBills) =>
-      prevBills.map((bill) =>
-        bill.id === billId ? { ...bill, status: "Paid" } : bill
-      )
-    );
-    alert(`Bill ID ${billId} has been paid!`);
   };
 
   const handleLogout = () => {
-    // Perform logout logic here (if needed)
-    navigate("/"); // Redirect to landing page
+    const confirmation_message_to_logout = "You are about to logout.\nProceed?"
+    if(!confirm(confirmation_message_to_logout)){
+      return
+    }
+    localStorage.setItem('access_token', null);  
+    localStorage.setItem('user_id', null);
+    localStorage.setItem('user_role', null);
+
+    navigate("/");
   };
 
+  const fetchMyPatients = async () => {
+    try {
+      const response = await fetch(`https://geographical-euphemia-wazo-tank-f4308d3f.koyeb.app/doctors/patients/${doctor_id}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setPatients(result)
+      } else {
+        throw new Error('Failed to fetch doctors.');
+      }
+    } catch (error) {
+      setMessage(`Error: ${error.message}`);
+    }
+  };
+
+  const fetchMyAppointments = async () => {
+    try {
+      const response = await fetch(`https://geographical-euphemia-wazo-tank-f4308d3f.koyeb.app/appointments/doctor/${doctor_id}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log("fetchMyAppointments", result)
+        setAppointments(result)
+      } else {
+        throw new Error('Failed to fetch doctors.');
+      }
+    } catch (error) {
+      setMessage(`Error: ${error.message}`);
+    }
+  };
+
+  const handleUpdateAppointment = async (e) => {
+    e.preventDefault();
+
+    try {
+      const response = await fetch(`https://geographical-euphemia-wazo-tank-f4308d3f.koyeb.app/appointments/${doctor_id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(appointmentToBeUpdated)
+      });
+      console.log("appointmentToBeUpdated", appointmentToBeUpdated)
+
+      if (response.ok) {
+        const result = await response.json();
+        fetchMyAppointments()
+        toogleUpdateAppointmentPrompt(false)
+        setTimeout(() => {
+          alert(result.message)
+        }, 0);
+      } else {
+        throw new Error('Failed to fetch doctors.');
+      }
+    } catch (error) {
+      setMessage(`Error: ${error.message}`);
+    }
+  }
+
+  const handleAddRecord = async (e) => {
+    e.preventDefault();
+
+    const record_data = recordToBeAdded
+    record_data.patient_id = patientGettingRecordAdded.id
+    console.log("recordToBeAdded", record_data)
+    try {
+      const response = await fetch('https://geographical-euphemia-wazo-tank-f4308d3f.koyeb.app/records/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(record_data)
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log("result", result)
+        fetchMyPatients()
+        toogleAddRecordPrompt(false)
+        setTimeout(() => {
+          alert(result.message)
+        }, 0);
+      } else {
+        throw new Error('Failed to fetch doctors.');
+      }
+    } catch (error) {
+      setMessage(`Error: ${error.message}`);
+    }
+  }
+
+  const handleBillPatient = async (patient) => {
+    try {
+      const bill_amount = prompt(`Enter the amount you want to bill ${patient.first_name} ${patient.last_name}`)
+  
+      if (bill_amount === null) {
+        return; 
+      }
+      
+      if(bill_amount == ""){
+        alert("You have not entered any amount")
+        handleBillPatient(patient)
+      }
+
+      const bill_description = prompt(`Enter the bill's description`)
+  
+      if (bill_description === null) {
+        alert("Cannot add a bill without a description, start again")
+
+        return; 
+      }
+
+      const parsedAmount = parseFloat(bill_amount);
+      if (isNaN(parsedAmount) || parsedAmount <= 0) {
+          alert("Please enter a valid amount that is greater than zero.");
+          return handleBillPatient(patient); 
+      }
+
+      const bill_data = {
+        "patient_id": patient.id,
+        "status": "Pending",
+        "amount": bill_amount,
+        "description": bill_description
+      }
+
+      const response = await fetch('https://geographical-euphemia-wazo-tank-f4308d3f.koyeb.app/bills/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(bill_data)
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log("result", result)
+        fetchMyPatients()
+        setTimeout(() => {
+          alert(result.message)
+        }, 0);
+      } else {
+        throw new Error('Failed to fetch doctors.');
+      }
+    } catch (error) {
+      setMessage(`Error: ${error.message}`);
+    } 
+  };
+
+  const toogleAddRecordPrompt = (patient) => {
+    if(patient){
+      console.log("patient", patient)
+
+      setPatientGettingRecordAdded(patient)
+    } else {
+      setRecordToBeAdded({
+        patient_id: null,
+        record: "Enter Record...",
+        subject: "Enter Subject..."
+      })
+    }
+    setIsAddRecordPromptOpen(patient)
+  }
+
+  const formatKey = (key) => {
+    return key
+      .split('_') // Split on underscores
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1)) // Capitalize each word
+      .join(' '); // Join words with spaces
+  };
+
+  const formatDate = (creation_date) => {
+    const date = new Date(creation_date)
+
+    // Get the day with a suffix (e.g., "17th")
+    const day = date.getUTCDate();
+    const day_suffix = (day) => {
+      if (day > 3 && day < 21) return 'th'; 
+      switch (day % 10) {
+        case 1: return 'st';
+        case 2: return 'nd';
+        case 3: return 'rd';
+        default: return 'th';
+      }
+    };
+
+    const formatted_date = `${day}${day_suffix(day)} ${date.toLocaleString('en-US', {
+      month: 'long',  
+      year: 'numeric' 
+    })}`;
+
+    const date_of_day = formatted_date.split(" ")[0].slice(0, -2);
+    const date_of_day_suffix = formatted_date.split(" ")[0].slice(-2);
+    const rest_of_date = formatted_date.split(" ").slice(1).join(" ");
+
+     
+    const formatted_time = date.toLocaleString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+      timeZone: 'Africa/Nairobi' // East African Time (EAT)
+    });
+
+    return {
+      "date_of_day": date_of_day,
+      "date_of_day_suffix": date_of_day_suffix,
+      "rest_of_date": rest_of_date,
+      "formatted_time": formatted_time
+    }
+  }
+
+  const toogleUpdateAppointmentPrompt = (appointment) => {
+    if(appointment){
+      setAppointmentToBeUpdated(appointment)
+    }
+    setIsUpdateAppointmentPromptOpen(appointment)
+  }
+
+  const handleUpdateAppointmentInputChange = (e) => {
+    const { name, value } = e.target;
+    setAppointmentToBeUpdated({ ...appointmentToBeUpdated, [name]: value });
+  };
+
+  const handleNewRecordInputChange = (e) => {
+    const { name, value } = e.target;
+    setRecordToBeAdded({ ...recordToBeAdded, [name]: value });
+  }
+
+  // Toggle between light and dark mode
+  const toggleDarkMode = () => {
+    setIsDarkMode(!isDarkMode);
+  };
+
+  
+  /**
+    * Mounted() Section 
+  **/
+  useEffect(() => {
+    // Apply dark mode class to the root element
+    if (isDarkMode) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, [isDarkMode]);
+
+  useEffect(() => {
+    fetchMyPatients();
+    fetchMyAppointments()
+  }, []);
+
+
+  /**
+   * HTML Section
+   */
   return (
-    <div className={`min-h-screen flex flex-col relative ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-white text-black'}`}>
+    <div
+      className={`min-h-screen flex flex-col relative transition-colors duration-300 ${
+        isDarkMode ? "bg-gray-900" : "bg-gray-100"
+      }`}
+    >
       {/* Navbar */}
-      <nav className={`bg-${isDarkMode ? 'gray-800' : 'gray-200'} shadow-md flex items-center justify-between px-4 py-3`}>
+      <nav
+        className={`shadow-md flex items-center justify-between px-4 py-3 ${
+          isDarkMode ? "bg-gray-800" : "bg-gray-300"
+        }`}
+      >
         <button
           onClick={() => setShowSidebar(!showSidebar)} // Show/hide sidebar
-          className={`text-${isDarkMode ? 'blue-300' : 'blue-600'} z-10`}
+          className={`${isDarkMode ? "text-blue-400" : "text-blue-700"} z-10`}
         >
           <FaBars className="text-2xl" />
         </button>
-        {/* Theme Toggle Button */}
+
+        {/* Dark/Light Mode Toggle */}
         <button
-          onClick={handleToggleTheme}
-          className={`p-2 rounded-full ${isDarkMode ? 'bg-gray-800 text-yellow-400' : 'bg-gray-200 text-blue-600'}`}
+          onClick={toggleDarkMode}
+          className={`px-4 py-2 rounded-lg ${
+            isDarkMode ? "bg-white text-gray-900" : "bg-gray-900 text-white"
+          }`}
         >
-          {isDarkMode ? <FaSun /> : <FaMoon />}
+          {isDarkMode ? "Light Mode" : "Dark Mode"}
         </button>
-        {/* Login Button at the Top Right */}
+
         <button
-          onClick={handleLogout} // Handle logout or navigate to login page
-          className={`bg-blue-600 text-white px-4 py-2 rounded-lg`}
+          onClick={handleLogout}
+          className="bg-red-600 text-white px-4 py-2 rounded-lg"
         >
-          Login
+          Logout
         </button>
       </nav>
 
-      {/* Patients Section Header */}
-      <header className={`bg-${isDarkMode ? 'gray-700' : 'gray-300'} py-6 text-center`}>
-        <h1 className="text-4xl font-bold">Welcome to the Patient Dashboard</h1>
-        <p className="mt-2 text-lg">Manage your health, appointments, and records in one place</p>
-      </header>
-
       {/* Sidebar */}
       {showSidebar && (
-        <div className={`absolute top-24 left-4 bg-${isDarkMode ? 'gray-800' : 'white'} p-4 rounded-lg shadow-lg z-20`}>
-          <h3 className="font-bold text-lg mb-4">Options</h3>
+        <div
+          className={`absolute top-16 left-4 p-4 rounded-lg shadow-lg z-20 ${
+            isDarkMode ? "bg-gray-800" : "bg-gray-300"
+          }`}
+        >
+          <h3 className={`font-bold text-lg mb-4 ${isDarkMode ? "text-white" : "text-gray-900"}`}>Options</h3>
           <ul>
-            <li onClick={() => handleActionClick("bookDoctor")} className={`cursor-pointer mb-2 text-${isDarkMode ? 'blue-400' : 'blue-600'} hover:underline`}>
-              <FaCalendarAlt className="inline mr-2" /> Book a Doctor
+            <li
+              onClick={() => handleActionClick("viewAppointments")}
+              className={`cursor-pointer mb-2 hover:underline ${
+                isDarkMode ? "text-blue-400" : "text-blue-700"
+              }`}
+            >
+              <FaCalendarAlt className="inline mr-2" /> View Appointments
             </li>
-            <li onClick={() => handleActionClick("viewRecords")} className={`cursor-pointer mb-2 text-${isDarkMode ? 'blue-400' : 'blue-600'} hover:underline`}>
-              <FaFileMedical className="inline mr-2" /> View Health Records
-            </li>
-            <li onClick={() => handleActionClick("viewBills")} className={`cursor-pointer text-${isDarkMode ? 'blue-400' : 'blue-600'} hover:underline`}>
-              <FaMoneyBill className="inline mr-2" /> View Bills
+            <li
+              onClick={() => handleActionClick("viewMyPatients")}
+              className={`cursor-pointer mb-2 hover:underline ${
+                isDarkMode ? "text-blue-400" : "text-blue-700"
+              }`}
+            >
+              <FaUserInjured className="inline mr-2" /> View Patients
             </li>
           </ul>
         </div>
       )}
 
       {/* Main Content Area */}
-      <div className="flex-grow flex flex-col items-center justify-center relative mt-12">
-        <div className={`bg-${isDarkMode ? 'gray-800' : 'gray-100'} bg-opacity-80 rounded-lg shadow-lg w-full max-w-4xl p-8 flex-grow`}>
-          {/* Welcome Message */}
-          <div className="text-center mb-8">
-            <h2 className={`text-2xl font-semibold ${isDarkMode ? 'text-blue-300' : 'text-blue-600'}`}>Hello, Patient!</h2>
-            <p className={`text-${isDarkMode ? 'gray-400' : 'gray-800'}`}>We are here to assist you with managing your healthcare needs. You can book a doctor, view your health records, and manage appointments from your dashboard.</p>
-          </div>
-
+      <div className="flex-grow flex items-center justify-center relative mt-12">
+        <div
+          className={`rounded-lg shadow-lg w-full max-w-4xl p-8 ${
+            isDarkMode ? "bg-gray-800 bg-opacity-90" : "bg-white"
+          }`}
+        >
           {/* Content Area */}
-          <div className={`bg-${isDarkMode ? 'gray-700' : 'gray-200'} p-4 rounded-lg shadow-lg`}>
+          <div
+            className={`p-4 rounded-lg shadow-lg ${
+              isDarkMode ? "bg-gray-700" : "bg-gray-200"
+            }`}
+          >
             {selectedAction ? (
               <>
-                <h2 className="text-xl font-semibold">{selectedAction.replace(/([A-Z])/g, ' $1')}</h2>
-                <p className={`text-${isDarkMode ? 'gray-400' : 'gray-800'}`}>
-                  You selected to {selectedAction.replace(/([A-Z])/g, ' $1').toLowerCase()}.
+                <h2
+                  className={`text-xl font-semibold ${
+                    isDarkMode ? "text-white" : "text-gray-900"
+                  }`}
+                >
+                  Selected Action: {selectedAction.replace(/([A-Z])/g, " $1")}
+                </h2>
+                <p className={isDarkMode ? "text-gray-300" : "text-gray-700"}>
+                  You selected to{" "}
+                  {selectedAction.replace(/([A-Z])/g, " $1").toLowerCase()}.
                 </p>
-                {/* Implement the functionality buttons for each action here */}
-                {selectedAction === "bookDoctor" && (
+
+                {/* Action-specific content */}
+                {selectedAction === "viewMyPatients" && (
                   <div className="mt-4">
-                    <h3 className="font-semibold">Book a Doctor</h3>
-                    <select onChange={(e) => handleServiceChange(e.target.value)} className={`p-2 border rounded mb-2 w-full bg-${isDarkMode ? 'gray-600' : 'white'} text-${isDarkMode ? 'white' : 'black'}`}>
-                      <option value="">Select Service</option>
-                      <option value="Consultation">Consultation</option>
-                      <option value="Check-up">Check-up</option>
-                      <option value="Follow-Up">Follow-Up</option>
-                      {/* Add more services as needed */}
-                    </select>
-                    {selectedService && (
-                      <>
-                        <h4 className="font-semibold mt-2">Available Doctors for {selectedService}:</h4>
-                        {availableDoctors.length > 0 ? (
-                          <ul className="mt-2">
-                            {availableDoctors.map((doctor) => (
-                              <li key={doctor.id} className={`text-${isDarkMode ? 'gray-300' : 'gray-600'} mb-1`}>{doctor.name}</li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className={`text-${isDarkMode ? 'gray-400' : 'gray-600'}`}>No doctors available for this service.</p>
-                        )}
-                        <input type="date" className={`p-2 border rounded mb-2 w-full bg-${isDarkMode ? 'gray-600' : 'white'} text-${isDarkMode ? 'white' : 'black'}`} />
-                        <input type="time" className={`p-2 border rounded mb-2 w-full bg-${isDarkMode ? 'gray-600' : 'white'} text-${isDarkMode ? 'white' : 'black'}`} />
-                        <button className={`bg-blue-600 text-white px-4 py-2 rounded-lg`}>Book Appointment</button>
-                      </>
+                    <h3 className={isDarkMode ? "font-semibold text-white" : "font-semibold text-gray-900"}>Patients List</h3>
+                    <div className="bg-slate-500 p-2">
+                      <div className="mt-4">
+                        <ul className="mt-2">
+                        {patients.map((patient) => (
+                            <li key={patient.id} className="mb-4 bg-slate-700 p-2 rounded">
+                              <h4 className={`${isDarkMode ? 'text-white' : 'text-gray-900'} font-bold`}>
+                                {`${patient.id}: ${patient.first_name} ${patient.last_name} (${patient.gender})`}
+
+                              </h4>
+                              
+                              <ul>
+                                <li className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                  <span className="font-bold">
+                                    {`DOB: `}
+                                  </span>
+                                  <span>
+                                    {`${patient.date_of_birth}`}
+                                  </span>
+                                </li>
+                              </ul>
+                              <ul>
+                                <li className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                  <span className="font-bold">
+                                    {`Address: `}
+                                  </span>
+                                  <span>
+                                    {`${patient.address}`}
+                                  </span>
+                                </li>
+                              </ul>
+                              <ul>
+                                <li className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                  <span className="font-bold">
+                                    {`Phone Number: `}
+                                  </span>
+                                  <span>
+                                    {`${patient.phone_number}`}
+                                  </span>
+                                </li>
+                              </ul>
+                              <ul>
+                                <li className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                  <span className="font-bold">
+                                    {`Email: `}
+                                  </span>
+                                  <span>
+                                    {`${patient.email}`}
+                                  </span>
+                                </li>
+                              </ul>
+                              <ul>
+                                <li className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                  <span className="font-bold">
+                                    {`Emergency Contact: `}
+                                  </span>
+                                  <span>
+                                    {`${patient.emergency_contact_phone_number}`}
+                                  </span>
+                                </li>
+                              </ul>
+                              <ul>
+                                <p className={`${isDarkMode ? 'text-gray-300 font-bold' : 'text-gray-700 font-bold'}`}>
+                                  {`Records:`}
+                                </p>
+                                <div className="mx-4 bg-slate-900 p-2 rounded">
+                                  <ul>
+                                    {patient.records.map((record, index) => (
+
+                                      <li key={index} className={`${isDarkMode ? 'text-white' : 'text-white'}`}>
+                                        <ul className='bg-slate-400 m-2 p-2 rounded'>
+                                          {Object.entries(record)
+                                            .sort(([keyA], [keyB]) => {
+                                              const order = ["subject", "creation_date", "record", "patient_id"];
+                                              const indexA = order.indexOf(keyA);
+                                              const indexB = order.indexOf(keyB);
+                                              return (indexA === -1 ? order.length : indexA) - (indexB === -1 ? order.length : indexB);
+                                            })
+                                            .map(([key, value], index) => (
+                                              <li key={index} className={`${isDarkMode ? 'text-white' : 'text-black'}`}>
+                                                {key !== "id" && (
+                                                  <>
+                                                    {key === "creation_date" && (
+                                                      <>
+                                                        <span>
+                                                          {`${formatKey(key)}: ${formatDate(value).date_of_day}`}
+                                                          <sup>{formatDate(value).date_of_day_suffix}</sup> 
+                                                          &nbsp;
+                                                          {formatDate(value).rest_of_date} ({formatDate(value).formatted_time})
+                                                        </span>
+                                                      </>
+                                                    )}
+                                                    {key !== "creation_date" && (
+                                                      <>
+                                                        <span>
+                                                        {`${formatKey(key)}: ${value}`}
+                                                        </span>
+                                                      </>
+                                                    )}
+                                                  
+                                                  </>
+                                                )}
+                                              </li>
+                                            ))}
+                                        </ul>
+                                      </li>
+
+                                    ))}
+                                  </ul>
+                                </div>
+                              </ul>
+                              <ul>
+                                <p className={`${isDarkMode ? 'text-gray-300 font-bold' : 'text-gray-700 font-bold'}`}>
+                                  {`Bills:`}
+                                </p>
+                                <div className="mx-4 bg-slate-900 p-2 rounded">
+                                  <ul>
+                                    {patient.bills.map((bill, index) => (
+
+                                      <li key={index} className={`${isDarkMode ? 'text-white' : 'text-white'}`}>
+                                        <ul className='bg-slate-400 m-2 p-2 rounded'>
+                                          {Object.entries(bill)
+                                            .sort(([keyA], [keyB]) => {
+                                              const order = ["creation_date", "amount", "status", "id"];
+                                              const indexA = order.indexOf(keyA);
+                                              const indexB = order.indexOf(keyB);
+                                              return (indexA === -1 ? order.length : indexA) - (indexB === -1 ? order.length : indexB);
+                                            })
+                                            .map(([key, value], index) => (
+                                              <li key={index} className={`${isDarkMode ? 'text-white' : 'text-black'}`}>
+                                                {key !== "id" && (
+                                                  <>
+                                                    {key === "creation_date" && (
+                                                      <>
+                                                        <span>
+                                                          {`${formatKey(key)}: ${formatDate(value).date_of_day}`}
+                                                          <sup>{formatDate(value).date_of_day_suffix}</sup> 
+                                                          &nbsp;
+                                                          {formatDate(value).rest_of_date} ({formatDate(value).formatted_time})
+                                                        </span>
+                                                      </>
+                                                    )}
+                                                    {key !== "creation_date" && (
+                                                      <>
+                                                        <span>
+                                                        {`${formatKey(key)}: ${value}`}
+                                                        </span>
+                                                      </>
+                                                    )}
+                                                  
+                                                  </>
+                                                )}
+                                              </li>
+                                            ))}
+                                        </ul>
+                                      </li>
+
+                                    ))}
+                                  </ul>
+                                </div>
+                              </ul>
+                              <ul>
+                                <li className={`${isDarkMode ? 'text-gray-300 ml-4 mt-4' : 'text-gray-700 ml-4 mt-4'}`}>
+                                  <button className="bg-blue-600 text-white px-4 py-2 rounded-lg mx-1"  onClick={() => toogleAddRecordPrompt(patient)} >Add Record</button>
+                                  <button className="bg-red-600 text-white px-4 py-2 rounded-lg mx-1" onClick={() => handleBillPatient(patient)} >Bill Patient</button>
+                                </li>
+                              </ul>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+
+                    {isAddRecordPromptOpen && (
+                       <div className="fixed inset-x-0 top-5 bottom-5 flex items-center justify-center z-50">
+                       <div className="bg-slate-600 rounded-lg p-6 shadow-lg w-11/12 max-w-lg h-full overflow-y-auto relative">
+                         <div>
+                           <div className="mb-4 pb-4">
+                             <h1 className="absolute top-4 text-3xl mb-4 text-white">{`Add Record to ${patientGettingRecordAdded.first_name} ${patientGettingRecordAdded.last_name}`}</h1>
+
+                             <div className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center cursor-pointer" onClick={() => toogleAddRecordPrompt(false)}>
+                               &times; {/* This is the "X" symbol */}
+                             </div>
+                           </div>
+                           
+                           <ScrollableWrapper className="bg-white rounded">
+                              <StyledForm className="bg-white p-6 text rounded shadow-md my-6" onSubmit={handleAddRecord}>
+                                <div>
+                                <div>
+                                    <label className="block mt-3 mb-0">Subject:</label>
+                                    <input
+                                      className={`mt-1 p-2 border border-gray-600 rounded w-full ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-black'} focus:border-blue-500 focus:ring focus:ring-blue-200`}
+                                      type="text"
+                                      name="subject"
+                                      onChange={handleNewRecordInputChange}
+                                      value={recordToBeAdded.subject}
+                                      required
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block mt-0 mb-0">Record:</label>
+                                      <textarea
+                                        className={
+                                          `mt-1 p-2 border border-gray-600 rounded w-full ${(isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-black')} focus:border-blue-500 focus:ring focus:ring-blue-200`
+                                        }
+                                        onChange={handleNewRecordInputChange}
+                                        value={recordToBeAdded.record}
+                                        name="record"
+                                        required
+                                        rows={10} 
+                                      />
+                                  </div>
+                                  <div className="fixed bottom-10 left-0 right-0 flex justify-center">
+                                    <button
+                                      type="submit"
+                                      className={`p-2 rounded bg-green-500 text-white hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-200`}
+                                    >
+                                      Submit
+                                    </button>
+                                  </div>
+                                </div>
+                              </StyledForm>
+                            </ScrollableWrapper>
+                          </div>
+                        </div>
+                      </div>
                     )}
                   </div>
                 )}
-                {selectedAction === "viewRecords" && (
+
+                {selectedAction === "viewAppointments" && (
                   <div className="mt-4">
-                    <h3 className="font-semibold">Health Records</h3>
-                    <p className={`text-${isDarkMode ? 'gray-400' : 'gray-800'}`}>Your medical history and previous consultations will appear here.</p>
-                    <button className={`bg-blue-600 text-white px-4 py-2 rounded-lg mt-4`}>View Detailed Records</button>
+                    <h3 className={isDarkMode ? "font-semibold text-white" : "font-semibold text-gray-900"}>Appointments List</h3>
+
+                    <div className="bg-slate-500 p-2">
+                      <div className="mt-4">
+                        <ul className="mt-2">
+                          {appointments.map((appointment) => (
+                            <li key={appointment.id} className="mb-4 bg-slate-700 p-2 rounded">
+                              <h4 className={`${isDarkMode ? 'text-white' : 'text-gray-900'} font-bold`}>
+                                {`Appointment ID: ${appointment.id} (${appointment.status})`}
+
+                              </h4>
+                              
+                              <ul>
+                                <li className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                  <span className="font-bold">
+                                    {`Date: `}
+                                  </span>
+                                  <span>
+                                    {`${appointment.appointment_date}`}
+                                  </span>
+                                </li>
+                              </ul>
+
+                              <ul>
+                                <li className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                  <span className="font-bold">
+                                    {`Reason: `}
+                                  </span>
+                                  <span>
+                                    {`${appointment.reason_for_visit}`}
+                                  </span>
+                                </li>
+                              </ul>
+                              
+                              <ul>
+                                <li className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                  <span className="font-bold">
+                                    {`Cost: `}
+                                  </span>
+                                  <span>
+                                    {`${appointment.cost}`}
+                                  </span>
+                                </li>
+                              </ul>
+
+                              <ul>
+                                <p className={`${isDarkMode ? 'text-gray-300 font-bold' : 'text-gray-700 font-bold'}`}>
+                                  {`Patient:`}
+                                </p>
+                                <div className="mx-4 bg-slate-900 p-2 rounded">
+                                  <ul>
+                                    {Object.entries(appointment.patient).map(([key, value], index) => (
+                                      <li key={index} className={`${isDarkMode ? 'text-white' : 'text-black'}`}>
+                                         {key !== "id" && 
+                                        (
+                                          <span>
+                                            {`${formatKey(key)}: ${value}`}
+                                          </span>
+                                        )}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              </ul>
+
+                              <ul>
+                                <p className={`${isDarkMode ? 'text-gray-300 font-bold' : 'text-gray-700 font-bold'}`}>
+                                  {`Notes:`}
+                                </p>
+                                <div className="mx-4 bg-slate-900 p-2 rounded">
+                                  <ul>
+                                      <div className={`${isDarkMode ? 'text-white' : 'text-black'}`}>
+                                        {appointment.notes}
+                                      </div>
+                                  </ul>
+                                </div>
+                              </ul>
+                              
+                              <ul>
+                                <li className={`${isDarkMode ? 'text-gray-300 ml-4 mt-4' : 'text-gray-700 ml-4 mt-4'}`}>
+                                  <button className="bg-blue-600 text-white px-4 py-2 rounded-lg mx-1" onClick={() => toogleUpdateAppointmentPrompt(appointment)}>Update Appointment</button>
+                                </li>
+                              </ul>
+
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+
+                    {isUpdateAppointmentPromptOpen && (
+                      <div className="fixed inset-x-0 top-5 bottom-5 flex items-center justify-center z-50">
+                        <div className="bg-slate-600 rounded-lg p-6 shadow-lg w-11/12 max-w-lg h-full overflow-y-auto relative">
+                          <div>
+                            <div className="mb-4 pb-4">
+                              <h1 className="absolute top-4 text-3xl mb-4 text-white">{`Update Appointment`}</h1>
+
+                              <div className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center cursor-pointer" onClick={() => toogleUpdateAppointmentPrompt(false)}>
+                                &times; {/* This is the "X" symbol */}
+                              </div>
+                            </div>
+                            <ScrollableWrapper className="bg-white rounded">
+                              <StyledForm className="bg-white p-6 text rounded shadow-md my-6" onSubmit={handleUpdateAppointment}>
+                                <div>
+                                  <div>
+                                    <label className="block mt-0 mb-0">{`Appointment By: ${appointmentToBeUpdated.patient.first_name} ${appointmentToBeUpdated.patient.last_name}`}</label>
+                                    <label className="block mt-0 mb-0">{`Patient ID: PNT_${appointmentToBeUpdated.patient.id}`}</label>
+                                    <label className="block mt-0 mb-0">Notes:</label>
+                                    <textarea
+                                      className={
+                                        `mt-1 p-2 border border-gray-600 rounded w-full ${(isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-black')} focus:border-blue-500 focus:ring focus:ring-blue-200`
+                                      }
+                                      value={appointmentToBeUpdated.notes}
+                                      onChange={handleUpdateAppointmentInputChange}
+                                      name="notes"
+                                      required
+                                      rows={10} 
+                                    />
+
+                                    {/* Appointment Status Radio Inputs */}
+                                    <div className="mt-4">
+                                      <label className="block mt-3 mb-0">Appointment Status:</label>
+
+                                      <div className="grid grid-cols-3 gap-4">
+                                        {/* First Row */}
+                                        <label className="flex items-center my-2">
+                                          <input
+                                            className={`p-2 border border-gray-600 rounded ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-black'} focus:border-blue-500 focus:ring focus:ring-blue-200`}
+                                            type="radio"
+                                            name="status"
+                                            value="Scheduled"
+                                            checked={appointmentToBeUpdated.status === "Scheduled"}
+                                            onChange={handleUpdateAppointmentInputChange}
+                                            required
+                                          />
+                                          <span className="ml-2">Scheduled</span>
+                                        </label>
+
+                                        <label className="flex items-center my-2">
+                                          <input
+                                            className={`p-2 border border-gray-600 rounded ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-black'} focus:border-blue-500 focus:ring focus:ring-blue-200`}
+                                            type="radio"
+                                            name="status"
+                                            value="Confirmed"
+                                            checked={appointmentToBeUpdated.status === "Confirmed"}
+                                            onChange={handleUpdateAppointmentInputChange}
+                                            required
+                                          />
+                                          <span className="ml-2">Confirmed</span>
+                                        </label>
+
+                                        <label className="flex items-center my-2">
+                                          <input
+                                            className={`p-2 border border-gray-600 rounded ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-black'} focus:border-blue-500 focus:ring focus:ring-blue-200`}
+                                            type="radio"
+                                            name="status"
+                                            value="Checked In"
+                                            checked={appointmentToBeUpdated.status === "Checked In"}
+                                            onChange={handleUpdateAppointmentInputChange}
+                                            required
+                                          />
+                                          <span className="ml-2">Checked In</span>
+                                        </label>
+
+                                        {/* Second Row */}
+                                        <label className="flex items-center my-2">
+                                          <input
+                                            className={`p-2 border border-gray-600 rounded ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-black'} focus:border-blue-500 focus:ring focus:ring-blue-200`}
+                                            type="radio"
+                                            name="status"
+                                            value="Completed"
+                                            checked={appointmentToBeUpdated.status === "Completed"}
+                                            onChange={handleUpdateAppointmentInputChange}
+                                            required
+                                          />
+                                          <span className="ml-2">Completed</span>
+                                        </label>
+
+                                        <label className="flex items-center my-2">
+                                          <input
+                                            className={`p-2 border border-gray-600 rounded ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-black'} focus:border-blue-500 focus:ring focus:ring-blue-200`}
+                                            type="radio"
+                                            name="status"
+                                            value="Cancelled"
+                                            checked={appointmentToBeUpdated.status === "Cancelled"}
+                                            onChange={handleUpdateAppointmentInputChange}
+                                            required
+                                          />
+                                          <span className="ml-2">Cancelled</span>
+                                        </label>
+
+                                        <label className="flex items-center my-2">
+                                          <input
+                                            className={`p-2 border border-gray-600 rounded ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-black'} focus:border-blue-500 focus:ring focus:ring-blue-200`}
+                                            type="radio"
+                                            name="status"
+                                            value="No Show"
+                                            checked={appointmentToBeUpdated.status === "No Show"}
+                                            onChange={handleUpdateAppointmentInputChange}
+                                            required
+                                          />
+                                          <span className="ml-2">No Show</span>
+                                        </label>
+                                      </div>
+                                    </div>
+                                    
+                                    <div className="fixed bottom-10 left-0 right-0 flex justify-center">
+                                      <button
+                                        type="submit"
+                                        className={`p-2 rounded bg-green-500 text-white hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-200`}
+                                      >
+                                        Submit
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </StyledForm>
+                            </ScrollableWrapper>
+
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                   </div>
                 )}
-                {selectedAction === "viewBills" && (
+
+                {selectedAction === "billPatients" && (
                   <div className="mt-4">
-                    <h3 className="font-semibold">Your Bills</h3>
-                    {bills.length > 0 ? (
-                      <ul className="mt-2">
-                        {bills.map((bill) => (
-                          <li key={bill.id} className={`flex justify-between text-${isDarkMode ? 'gray-300' : 'gray-600'} mb-1`}>
-                            <span>Date: {bill.date}</span>
-                            <span>Amount: ${bill.amount}</span>
-                            <span>Status: {bill.status}</span>
-                            {bill.status === "Pending" && (
-                              <button
-                                className="bg-green-500 text-white px-2 py-1 rounded ml-4"
-                                onClick={() => handlePayment(bill.id)}
-                              >
-                                Pay
-                              </button>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className={`text-${isDarkMode ? 'gray-400' : 'gray-600'}`}>You have no bills at the moment.</p>
-                    )}
+                    <h3 className={isDarkMode ? "font-semibold text-white" : "font-semibold text-gray-900"}>Bill Patients</h3>
+                    <input
+                      type="text"
+                      placeholder="Patient ID"
+                      className={`p-2 border rounded mb-2 w-full ${
+                        isDarkMode
+                          ? "border-gray-600 bg-gray-700 text-white"
+                          : "border-gray-400 bg-gray-200 text-gray-900"
+                      }`}
+                    />
+                    <input
+                      type="number"
+                      placeholder="Bill Amount"
+                      className={`p-2 border rounded mb-2 w-full ${
+                        isDarkMode
+                          ? "border-gray-600 bg-gray-700 text-white"
+                          : "border-gray-400 bg-gray-200 text-gray-900"
+                      }`}
+                    />
+                    <button className="bg-blue-600 text-white px-4 py-2 rounded-lg">
+                      Submit Bill
+                    </button>
                   </div>
                 )}
               </>
             ) : (
-              <p className={`text-${isDarkMode ? 'gray-400' : 'gray-600'}`}>Please select an option from the menu.</p>
+              <p className={isDarkMode ? "text-gray-300" : "text-gray-700"}>
+                Please select an option from the menu.
+              </p>
             )}
           </div>
         </div>
@@ -222,4 +962,4 @@ const PatientDashboard = () => {
   );
 };
 
-export default PatientDashboard;
+export default DoctorDashboard;
