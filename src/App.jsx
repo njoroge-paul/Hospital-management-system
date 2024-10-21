@@ -12,14 +12,16 @@ import 'slick-carousel/slick/slick-theme.css';
 
 
 
+
+
 function App() {
   return (
     <Router>
-      <Routes> 
-       <Route path="/" element={<LandingPage />} /> 
-        <Route path="/admin/auth" element={<AdminAuth />} /> Route for Admin Auth
-        <Route path="/patient/auth" element={<PatientAuth />} /> Route for Patient Auth 
-        <Route path="/doctor/auth" element={<DoctorAuth />} /> Route for Doctor Login
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/auth" element={<AdminAuth />} />
+        <Route path="/auth" element={<PatientAuth />} />
+        <Route path="/doctor/auth" element={<DoctorAuth />} /> 
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/doctor" element={<DoctorDashboard />} />
         <Route path="/patient" element={<PatientDashboard />} />
@@ -29,3 +31,5 @@ function App() {
 }
 
 export default App;
+
+

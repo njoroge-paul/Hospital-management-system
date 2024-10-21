@@ -1,3 +1,4 @@
+
 import React from 'react';
 import Navbar from './Navbar'; // Ensure to import the Navbar component
 import Footer from './Footer'; // Ensure to import the Footer component
@@ -5,7 +6,7 @@ import Footer from './Footer'; // Ensure to import the Footer component
 const LandingPage = () => {
   return (
     <div className="relative min-h-screen font-sans bg-gray-900 text-gray-200">
-      <Navbar /> {/* Place Navbar component at the top */}
+      <Navbar /> 
 
       {/* Section for Welcome */}
       <section className="h-[50vh] flex flex-col justify-center items-center text-center p-4">
