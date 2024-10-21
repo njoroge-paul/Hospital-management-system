@@ -11,7 +11,6 @@
   },
   "dependencies": {
     "axios": "^1.7.7",
-    "firebase": "^10.14.1",
     "font-awesome": "^4.7.0",
     "fontawesome-free": "^1.0.4",
     "react": "^18.3.1",
@@ -35,6 +34,6 @@
     "globals": "^15.9.0",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.14",
-    "vite": "^5.4.8"
+    "vite": "^5.4.9"
   }
 }
