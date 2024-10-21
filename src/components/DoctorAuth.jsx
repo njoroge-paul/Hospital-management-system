@@ -2,14 +2,14 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 const DoctorAuth = () => {
-  const [username, setUsername] = useState("");
+  // const [password, setUsername] = useState('');
   const [password, setPassword] = useState("");
   const [isDarkMode, setIsDarkMode] = useState(true); // Dark mode state
   const navigate = useNavigate();
 
   const handleLogin = (e) => {
     e.preventDefault();
-    console.log("Doctor Login:", { username, password });
+    console.log("Doctor Login:", { password });
     navigate("/doctor"); // Redirect to Doctor Dashboard
   };
 
@@ -63,11 +63,11 @@ const DoctorAuth = () => {
             <label
               className={`${isDarkMode ? "text-gray-300" : "text-gray-900"}`}
             >
-              Username
+              password
             </label>
             <input
               type="text"
-              value={username}
+              value={password}
               onChange={(e) => setUsername(e.target.value)}
               required
               className={`mt-1 p-2 border rounded w-full focus:ring focus:ring-blue-200 ${
