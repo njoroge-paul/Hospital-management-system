@@ -1,3 +1,4 @@
+
 import React from 'react';
 import Navbar from './Navbar'; // Ensure to import the Navbar component
 import Footer from './Footer'; // Ensure to import the Footer component
