@@ -116,7 +116,7 @@ const DoctorDashboard = () => {
   const fetchMyPatients = async () => {
     try {
       const response = await fetch(
-        `https://geographical-euphemia-wazo-tank-f4308d3f.koyeb.app/doctors/patients/${doctor_id}`,
+        `https://mere-mavis-wakulima-9f4fea97.koyeb.app//doctors/patients/${doctor_id}`,
         {
           method: "GET",
           headers: {
@@ -139,7 +139,7 @@ const DoctorDashboard = () => {
   const fetchMyAppointments = async () => {
     try {
       const response = await fetch(
-        `https://geographical-euphemia-wazo-tank-f4308d3f.koyeb.app/appointments/doctor/${doctor_id}`,
+        `https://mere-mavis-wakulima-9f4fea97.koyeb.app//appointments/doctor/${doctor_id}`,
         {
           method: "GET",
           headers: {
@@ -165,7 +165,7 @@ const DoctorDashboard = () => {
 
     try {
       const response = await fetch(
-        `https://geographical-euphemia-wazo-tank-f4308d3f.koyeb.app/appointments/${doctor_id}`,
+        `https://mere-mavis-wakulima-9f4fea97.koyeb.app//appointments/${doctor_id}`,
         {
           method: "PATCH",
           headers: {
@@ -199,7 +199,7 @@ const DoctorDashboard = () => {
     console.log("recordToBeAdded", record_data);
     try {
       const response = await fetch(
-        "https://geographical-euphemia-wazo-tank-f4308d3f.koyeb.app/records/",
+        "https://mere-mavis-wakulima-9f4fea97.koyeb.app//records/",
         {
           method: "POST",
           headers: {
@@ -262,7 +262,7 @@ const DoctorDashboard = () => {
       };
 
       const response = await fetch(
-        "https://geographical-euphemia-wazo-tank-f4308d3f.koyeb.app/bills/",
+        "https://mere-mavis-wakulima-9f4fea97.koyeb.app//bills/",
         {
           method: "POST",
           headers: {
